@@ -62,6 +62,7 @@ Rx64Response rx64 = Rx64Response();
 int statusLed = 13;
 int errorLed = 12;
 int dataLed = 9;
+int sensorpin = 0;
 int sensorVal = 0;                 // variable to store the values from sensor(initially zero)
 
 uint8_t option = 0;
