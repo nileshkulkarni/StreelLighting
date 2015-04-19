@@ -27,7 +27,7 @@
 
 #define MAX_NBRS 2
 #define READ_TIMEOUT 10
-#define LED_ON_TIME 100
+#define LED_ON_TIME 1000
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -62,6 +62,7 @@ Rx64Response rx64 = Rx64Response();
 int statusLed = 13;
 int errorLed = 12;
 int dataLed = 9;
+int sensorVal = 0;                 // variable to store the values from sensor(initially zero)
 
 uint8_t option = 0;
 uint8_t data = 0;
@@ -102,6 +103,16 @@ void autoConfiguration(){
  xbee.send(tx);
 }
 
+void signalOn(){
+   Serial.println("Sending to nbrs that found a car");
+   for(int i=0;i<noOfNbrs;i++)
+   {
+     addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
+     payload[0] = SWITCH_ON;
+     tx = Tx64Request(addr64, payload, sizeof(payload));
+     xbee.send(tx);
+   }
+}
 void addNbr(Rx64Response recv64){
   XBeeAddress64 NbrAddr64;
   NbrAddr64 = recv64.getRemoteAddress64();
@@ -168,7 +179,7 @@ void addNbr(Rx64Response recv64){
     Serial.print(": ");
     Serial.print(nbrList[i].DL);
     Serial.print(" ");
-    Serial.print(nbrList[i].strength);
+    Serial.println(nbrList[i].strength);
   }
 }
 
@@ -195,7 +206,12 @@ void processPayload(Rx64Response recv64){
 
 // continuously reads packets, looking for RX16 or RX64
 void loop() {
-
+    sensorVal = analogRead(sensorpin); 
+    if(sensorVal > 100)
+    {
+      ledcount = LED_ON_TIME;
+      signalOn();
+    }
     xbee.readPacket(READ_TIMEOUT);
     if(ledcount==0)
         digitalWrite(statusLed,LOW);
