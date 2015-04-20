@@ -127,8 +127,13 @@ void sensing()
       digitalWrite(statusLed, HIGH);
       signalOn();
 
-      if(meanArrivalTime > LED_ON_COST)
-        offEventID = t.after(MIN_ON_TIME,turnOff);       
+      if(meanArrivalTime > LED_ON_COST)  
+      {
+        Serial.print("offing after ");
+        Serial.print(MIN_ON_TIME);
+        offEventID = t.after(MIN_ON_TIME,turnOff);
+      }
+
       else
       {
         offEventID = t.after(2*LED_ON_COST - meanArrivalTime,turnOff);       
@@ -272,7 +277,11 @@ void processPayload(Rx64Response recv64){
       on = true;      
       digitalWrite(statusLed, HIGH);
       if(meanArrivalTime > LED_ON_COST)  
-          offEventID = t.after(MIN_ON_TIME,turnOff);
+      {
+        Serial.print("offing after ");
+        Serial.print(MIN_ON_TIME);
+        offEventID = t.after(MIN_ON_TIME,turnOff);
+      }
       else 
       {
         offEventID = t.after(2*LED_ON_COST - meanArrivalTime,turnOff);
