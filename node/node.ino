@@ -107,7 +107,7 @@ void sensing()
 {
   sensorVal = analogRead(sensorpin); 
 
-//  Serial.println(passing);
+  //Serial.println(sensorVal);
   if(passing == 0 && sensorVal > 200)
   {
     passing = 1;
