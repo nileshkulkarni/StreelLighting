@@ -276,7 +276,7 @@ void processPayload(Rx64Response recv64){
       t.stop(offEventID);
       on = true;      
       digitalWrite(statusLed, HIGH);
-      System.out.println("Led turned on by wireless message")
+      Serial.println("Led turned on by wireless message");
       delay(100);
       
       if(meanArrivalTime > LED_ON_COST)  
