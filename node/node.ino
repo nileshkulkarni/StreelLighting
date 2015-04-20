@@ -28,7 +28,7 @@
 #define MAX_NBRS 2
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
-#define MIN_ON_TIME 6000
+#define MIN_ON_TIME 2000
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -65,13 +65,13 @@ int errorLed = 12;
 int dataLed = 9;
 int sensorpin = 0;
 int sensorVal = 0;                 // variable to store the values from sensor(initially zero)
-int meanArrivalTime = 20000;
+unsigned long meanArrivalTime = 20000;
 int passingCount = 0;
 bool passing = 0;
 bool on = 0;
 int offEventID = -1;
 Timer t;
-int lastTime = 0;
+unsigned long lastTime = 0;
 
 
 void autoConfiguration(){
@@ -100,6 +100,7 @@ void turnOff(){
   Serial.print("Current Time: ");
   Serial.println(millis());
   Serial.println("turning off");
+  //delay(100000);
 }
 
 void sensing()
@@ -120,7 +121,7 @@ void sensing()
     if(passingCount >= 5)
     {
 
-      //meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
+      meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
       Serial.print("u mean ");
       Serial.println(meanArrivalTime);
       lastTime= millis();
@@ -131,9 +132,11 @@ void sensing()
 
       if(meanArrivalTime > LED_ON_COST)  
       {
-        Serial.print("offing after ");
-        Serial.print(MIN_ON_TIME);
-        offEventID = t.after(MIN_ON_TIME,turnOff);
+        Serial.print("offing after ");  
+        Serial.println(MIN_ON_TIME);
+        Serial.print("offing event scheduled at: ");
+        Serial.println(MIN_ON_TIME+millis());
+        offEventID = t.after((unsigned long)MIN_ON_TIME,turnOff);
       }
 
       else
@@ -187,7 +190,7 @@ void setup() {
   xbee.setSerial(mySerial);
   //flashLed(statusLed, 3, 50);
   autoConfiguration();
-  t.every(10,sensing);
+  t.every(100,sensing);
 }
 
 void addNbr(Rx64Response recv64){
@@ -285,7 +288,7 @@ void processPayload(Rx64Response recv64){
       {
         Serial.print("offing after ");
         Serial.print(MIN_ON_TIME);
-        offEventID = t.after(MIN_ON_TIME,turnOff);
+        offEventID = t.after((unsigned long)MIN_ON_TIME,turnOff);
       }
       else 
       {
@@ -300,6 +303,8 @@ void processPayload(Rx64Response recv64){
 
 // continuously reads packets, looking for RX16 or RX64
 void loop() {
+  
+  
    t.update();
     
     xbee.readPacket(READ_TIMEOUT);

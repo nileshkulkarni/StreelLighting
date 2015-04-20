@@ -42,8 +42,28 @@ void Event::update(void)
 
 void Event::update(unsigned long now)
 {
+	/*
+	if(repeatCount==1){
+		Serial.println("Before executing IF");
+		Serial.print("Now : ");
+		Serial.println((long)now);
+		Serial.print("LastEventTime : ");
+		Serial.println((long)lastEventTime);
+	}
+	*/
 	if (now - lastEventTime >= period)
 	{
+	/*	
+		if(repeatCount==1){
+			Serial.print("Event time ");
+			Serial.println(now);
+			Serial.print("Last Event time ");
+			Serial.println(lastEventTime);
+			Serial.print("Period ");
+			Serial.println(period);
+
+		}
+	*/
 		switch (eventType)
 		{
 			case EVENT_EVERY:

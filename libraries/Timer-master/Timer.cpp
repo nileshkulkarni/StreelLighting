@@ -43,6 +43,8 @@ int8_t Timer::every(unsigned long period, void (*callback)(), int repeatCount)
 	_events[i].repeatCount = repeatCount;
 	_events[i].callback = callback;
 	_events[i].lastEventTime = millis();
+	Serial.print("Last Event Time :");
+	Serial.println(_events[i].lastEventTime);
 	_events[i].count = 0;
 	return i;
 }
@@ -121,6 +123,7 @@ void Timer::update(unsigned long now)
 	{
 		if (_events[i].eventType != EVENT_NONE)
 		{
+			 now = millis();
 			_events[i].update(now);
 		}
 	}
