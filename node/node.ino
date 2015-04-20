@@ -114,9 +114,10 @@ void sensing()
   }
   else if(passing == 1 && sensorVal < 200)
   {
+    passing = 0;
     if(passingCount >= 5)
     {
-      passing = 0;
+
       meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
       Serial.print("u mean ");
       Serial.println(meanArrivalTime);
@@ -136,6 +137,10 @@ void sensing()
       }
 //      offEventID = t.after(2000,turnOff);       
 //      Serial.println(offEventID);
+    }
+    else
+    {
+      Serial.println("ignored");
     }
   }
   else
