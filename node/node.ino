@@ -118,7 +118,7 @@ void sensing()
   else if(passing == 1 && sensorVal < 200)
   {
     passing = 0;
-    if(passingCount >= 5)
+    if(passingCount >= 1)
     {
 
       meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
@@ -155,7 +155,7 @@ void sensing()
   }
   else
   {
-    if(passingCount <5)
+    if(passingCount <=5)
       passingCount++;
     
   }  
