@@ -65,7 +65,7 @@ int errorLed = 12;
 int dataLed = 9;
 int sensorpin = 0;
 int sensorVal = 0;                 // variable to store the values from sensor(initially zero)
-int meanArrivalTime = 2000;
+int meanArrivalTime = 20000;
 int passingCount = 0;
 bool passing = 0;
 bool on = 0;
@@ -118,7 +118,7 @@ void sensing()
     if(passingCount >= 5)
     {
 
-      meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
+      //meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
       Serial.print("u mean ");
       Serial.println(meanArrivalTime);
       lastTime= millis();
@@ -276,6 +276,9 @@ void processPayload(Rx64Response recv64){
       t.stop(offEventID);
       on = true;      
       digitalWrite(statusLed, HIGH);
+      System.out.println("Led turned on by wireless message")
+      delay(100);
+      
       if(meanArrivalTime > LED_ON_COST)  
       {
         Serial.print("offing after ");
