@@ -19,7 +19,7 @@
 
 #include <XBee.h>
 #include <SoftwareSerial.h>
-
+#include <Timer.h>
 #define CONF_SYN 10
 #define CONF_ACK 11
 
@@ -27,14 +27,16 @@
 
 #define MAX_NBRS 2
 #define READ_TIMEOUT 10
-#define LED_ON_TIME 1000
+#define LED_ON_COST 10000
+#define MIN_ON_TIME 2000
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
 Error led is flashed if an unexpected packet is received
 */
 uint8_t payload[] = {0};
-enum SIDE{ LEFT, RIGHT,UNDEFINED};
+//enum SIDE{ LEFT, RIGHT,UNDEFINED};
+
 // 64-bit addressing: This is the SH + SL address of remote XBee
 //XBeeAddress64 addr64 = XBeeAddress64(0x00, 0xFFFF);
 XBeeAddress64 addr64;
@@ -48,7 +50,6 @@ typedef struct {
   uint32_t DH;
   uint32_t DL;
   int strength;
-  enum SIDE side;  
 } NodeDetails;
 
 NodeDetails* nbrList = (NodeDetails*)malloc(MAX_NBRS*sizeof(NodeDetails));
@@ -64,6 +65,87 @@ int errorLed = 12;
 int dataLed = 9;
 int sensorpin = 0;
 int sensorVal = 0;                 // variable to store the values from sensor(initially zero)
+int meanArrivalTime = 2000;
+int passingCount = 0;
+bool passing = 0;
+bool on = 0;
+int offEventID = -1;
+Timer t;
+int lastTime = 0;
+
+
+void autoConfiguration(){
+ // Broadcast your packet with AUTO_SYN
+ Serial.println("Broadcasting");
+ addr64 = XBeeAddress64(0x00, 0xFFFF);
+ payload[0] = CONF_SYN;
+ tx = Tx64Request(addr64, payload, sizeof(payload));
+ xbee.send(tx);
+}
+
+void signalOn(){
+   Serial.println("Sending to nbrs that found a car");
+   for(int i=0;i<noOfNbrs;i++)
+   {
+     addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
+     payload[0] = SWITCH_ON;
+     tx = Tx64Request(addr64, payload, sizeof(payload));
+     xbee.send(tx);
+   }
+}
+
+void turnOff(){
+  on = false;
+  digitalWrite(statusLed,LOW);
+  Serial.println("turning off");
+}
+
+void sensing()
+{
+  sensorVal = analogRead(sensorpin); 
+
+//  Serial.println(passing);
+  if(passing == 0 && sensorVal > 200)
+  {
+    passing = 1;
+    passingCount = 0; 
+    Serial.println("Incoming");
+       
+  }
+  else if(passing == 1 && sensorVal < 200)
+  {
+    if(passingCount >= 5)
+    {
+      passing = 0;
+      meanArrivalTime = 0.5 * ( millis() - lastTime) + 0.5* meanArrivalTime;
+      Serial.print("u mean ");
+      Serial.println(meanArrivalTime);
+      lastTime= millis();
+      t.stop(offEventID);
+      on = true;      
+      digitalWrite(statusLed, HIGH);
+      signalOn();
+
+      if(meanArrivalTime > LED_ON_COST)
+        offEventID = t.after(MIN_ON_TIME,turnOff);       
+      else
+      {
+        offEventID = t.after(2*LED_ON_COST - meanArrivalTime,turnOff);       
+        Serial.print("offing after ");
+        Serial.print(2*LED_ON_COST - meanArrivalTime);
+      }
+//      offEventID = t.after(2000,turnOff);       
+//      Serial.println(offEventID);
+    }
+  }
+  else
+  {
+    if(passingCount <5)
+      passingCount++;
+    
+  }  
+}
+
 
 uint8_t option = 0;
 uint8_t data = 0;
@@ -93,27 +175,9 @@ void setup() {
   xbee.setSerial(mySerial);
   //flashLed(statusLed, 3, 50);
   autoConfiguration();
+  t.every(10,sensing);
 }
 
-void autoConfiguration(){
- // Broadcast your packet with AUTO_SYN
- Serial.println("Broadcasting");
- addr64 = XBeeAddress64(0x00, 0xFFFF);
- payload[0] = CONF_SYN;
- tx = Tx64Request(addr64, payload, sizeof(payload));
- xbee.send(tx);
-}
-
-void signalOn(){
-   Serial.println("Sending to nbrs that found a car");
-   for(int i=0;i<noOfNbrs;i++)
-   {
-     addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
-     payload[0] = SWITCH_ON;
-     tx = Tx64Request(addr64, payload, sizeof(payload));
-     xbee.send(tx);
-   }
-}
 void addNbr(Rx64Response recv64){
   XBeeAddress64 NbrAddr64;
   NbrAddr64 = recv64.getRemoteAddress64();
@@ -168,7 +232,7 @@ void addNbr(Rx64Response recv64){
       Serial.println(nbrList[maxIndex].DH);
       Serial.println(nbrList[maxIndex].DL);
       nbrList[maxIndex].strength = rx64.getRssi();
-      nbrList[maxIndex].side = UNDEFINED;      
+//      nbrList[maxIndex].side = UNDEFINED;      
     }
   }
   Serial.print("Current size ");
@@ -199,7 +263,17 @@ void processPayload(Rx64Response recv64){
         addNbr(recv64);
     break;
   case SWITCH_ON:
-     ledcount=LED_ON_TIME;
+      t.stop(offEventID);
+      on = true;      
+      digitalWrite(statusLed, HIGH);
+      if(meanArrivalTime > LED_ON_COST)  
+          offEventID = t.after(MIN_ON_TIME,turnOff);
+      else 
+      {
+        offEventID = t.after(2*LED_ON_COST - meanArrivalTime,turnOff);
+        Serial.print("offing after ");
+        Serial.print(2*LED_ON_COST - meanArrivalTime);
+      }
    break; 
  } 
   
@@ -207,19 +281,9 @@ void processPayload(Rx64Response recv64){
 
 // continuously reads packets, looking for RX16 or RX64
 void loop() {
-    sensorVal = analogRead(sensorpin); 
-    if(sensorVal > 100)
-    {
-      ledcount = LED_ON_TIME;
-      signalOn();
-    }
+   t.update();
+    
     xbee.readPacket(READ_TIMEOUT);
-    if(ledcount==0)
-        digitalWrite(statusLed,LOW);
-    else{
-        digitalWrite(statusLed,HIGH);
-        ledcount--;
-    }    
     if (xbee.getResponse().isAvailable()) {
       // got something
       Serial.println("got something");
