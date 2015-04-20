@@ -28,7 +28,7 @@
 #define MAX_NBRS 2
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
-#define MIN_ON_TIME 2000
+#define MIN_ON_TIME 6000
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -97,6 +97,8 @@ void signalOn(){
 void turnOff(){
   on = false;
   digitalWrite(statusLed,LOW);
+  Serial.print("Current Time: ");
+  Serial.println(millis());
   Serial.println("turning off");
 }
 
