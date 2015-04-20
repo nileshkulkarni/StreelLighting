@@ -190,7 +190,7 @@ void setup() {
   xbee.setSerial(mySerial);
   //flashLed(statusLed, 3, 50);
   autoConfiguration();
-  t.every(100,sensing);
+  t.every(10,sensing);
 }
 
 void addNbr(Rx64Response recv64){
