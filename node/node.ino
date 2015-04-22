@@ -28,7 +28,7 @@
 #define MAX_NBRS 2
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
-#define MIN_ON_TIME 2000
+#define MIN_ON_TIME 5000
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -199,8 +199,12 @@ void addNbr(Rx64Response recv64){
   bool alreadyExist = false;
   for(int i =0;i<noOfNbrs;i++){
     Serial.print("matching ");
+    Serial.print(nbrList[i].DH);
+    Serial.print(":");
     Serial.print(nbrList[i].DL);
     Serial.print(" with ");
+     Serial.println(NbrAddr64.getMsb());
+      Serial.println(":"    );
     Serial.println(NbrAddr64.getLsb());
     if(nbrList[i].DH == NbrAddr64.getMsb() && nbrList[i].DL == NbrAddr64.getLsb()){
         alreadyExist=true;
@@ -257,6 +261,8 @@ void addNbr(Rx64Response recv64){
     Serial.print("Member ");
     Serial.print(i);
     Serial.print(": ");
+    Serial.print(nbrList[i].DH);
+      Serial.print(": ");
     Serial.print(nbrList[i].DL);
     Serial.print(" ");
     Serial.println(nbrList[i].strength);
