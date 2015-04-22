@@ -30,7 +30,7 @@
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
 #define MIN_ON_TIME 5000
-int ID =  3;
+int ID =  0;
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
