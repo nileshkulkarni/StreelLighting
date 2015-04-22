@@ -55,7 +55,6 @@ typedef struct {
 } NodeDetails;
 
 NodeDetails* nbrList = (NodeDetails*)malloc(MAX_NBRS*sizeof(NodeDetails));
-uint8_t *switchOnAcks = malloc(MAX_NBRS*sizeof(unit8_t)); 
 int noOfNbrs=0;
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -318,12 +317,7 @@ void processPayload(Rx64Response recv64){
         Serial.print(2*LED_ON_COST - meanArrivalTime);
       }
    break;
-  case SWITCH_ON_ACK:
-        Xbee64Address = recv64.getRemoteAddress64();
-       for(int i =0;i<noOfNbrs;i++){
-           if(nbrList
-       }  
-  break; 
+  
  } 
   
 }
