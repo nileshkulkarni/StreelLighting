@@ -24,6 +24,7 @@
 #define CONF_ACK 11
 
 #define SWITCH_ON 1
+#define SWITCH_ON_ACK 2
 
 #define MAX_NBRS 5
 #define READ_TIMEOUT 10
@@ -54,6 +55,7 @@ typedef struct {
 } NodeDetails;
 
 NodeDetails* nbrList = (NodeDetails*)malloc(MAX_NBRS*sizeof(NodeDetails));
+uint8_t *switchOnAcks = malloc(MAX_NBRS*sizeof(unit8_t)); 
 int noOfNbrs=0;
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -84,7 +86,10 @@ void autoConfiguration(){
   nbrList[3].DL = 1080095032;
   nbrList[4].DL = 1081531434;
 }
-
+void reSend(){
+  
+ 
+}
 void signalOn(){
    Serial.println("Sending to nbrs that found a car");
    for(int i=ID-1;i<=ID+1;i++)
@@ -312,7 +317,13 @@ void processPayload(Rx64Response recv64){
         Serial.print("offing after ");
         Serial.print(2*LED_ON_COST - meanArrivalTime);
       }
-   break; 
+   break;
+  case SWITCH_ON_ACK:
+        Xbee64Address = recv64.getRemoteAddress64();
+       for(int i =0;i<noOfNbrs;i++){
+           if(nbrList
+       }  
+  break; 
  } 
   
 }

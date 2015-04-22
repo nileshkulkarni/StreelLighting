@@ -24,11 +24,13 @@
 #define CONF_ACK 11
 
 #define SWITCH_ON 1
+#define SWITCH_ON_ACK 2
 
 #define MAX_NBRS 2
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
 #define MIN_ON_TIME 2000
+#define ACK_WAIT_TIME 2000
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -45,13 +47,14 @@ XBeeAddress64 addr64;
 Tx64Request tx;
 
 TxStatusResponse txStatus = TxStatusResponse();
-
+bool isResendScheduled = false;
 typedef struct {
   uint32_t DH;
   uint32_t DL;
   int strength;
 } NodeDetails;
 
+uint8_t* ackList = (uint8_t*)malloc(MAX_NBRS*sizeof(uint8_t));
 NodeDetails* nbrList = (NodeDetails*)malloc(MAX_NBRS*sizeof(NodeDetails));
 int noOfNbrs=0;
 XBee xbee = XBee();
@@ -82,6 +85,9 @@ void autoConfiguration(){
  payload[0] = CONF_SYN;
  tx = Tx64Request(addr64, payload, sizeof(payload));
  xbee.send(tx);
+ for (int i =0;i<MAX_NBRS;i++){
+   ackList[i] =0;
+ }
 }
 
 void signalOn(){
@@ -91,8 +97,13 @@ void signalOn(){
      addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
      payload[0] = SWITCH_ON;
      tx = Tx64Request(addr64, payload, sizeof(payload));
+     ackList[i]=1;
      xbee.send(tx);
    }
+   if(!isResendScheduled){
+      t.after(ACK_WAIT_TIME, reSendSignal);
+      isResendScheduled = true;
+    }
 }
 
 void turnOff(){
@@ -102,6 +113,8 @@ void turnOff(){
   Serial.println(millis());
   Serial.println("turning off");
   //delay(100000);
+  for(int i =0;i<noOfNbrs;i++)
+    ackList[i]=0;
 }
 
 void sensing()
@@ -201,7 +214,7 @@ void setup() {
   //flashLed(statusLed, 3, 50);
   autoConfiguration();
   t.every(15,sensing);
-  t.every(60000,autoConfiguration);
+  t.every(600000,autoConfiguration);
 }
 
 void addNbr(Rx64Response recv64){
@@ -274,6 +287,45 @@ void addNbr(Rx64Response recv64){
   }
 }
 
+void reSendSignal(){
+  bool scheduleResendEvent = false;
+  for(int i =0;i<noOfNbrs;i++){
+      if(ackList[i] ==1){
+        Serial.print("Expecting ACK ");
+        Serial.println(nbrList[i].DL);
+        addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
+        payload[0] = SWITCH_ON;
+        tx = Tx64Request(addr64, payload, sizeof(payload));
+        ackList[i]=1;
+        xbee.send(tx);
+        scheduleResendEvent =true;
+      }
+    }
+    isResendScheduled=false;    
+    if(scheduleResendEvent){
+      t.after(ACK_WAIT_TIME, reSendSignal);
+      isResendScheduled=true;    
+    }
+
+}
+void verfiyAck(Rx64Response recv64){
+  XBeeAddress64 NbrAddr64;
+  NbrAddr64 = recv64.getRemoteAddress64();
+  for(int i =0;i<noOfNbrs;i++){
+    if(nbrList[i].DH == NbrAddr64.getMsb() && nbrList[i].DL == NbrAddr64.getLsb()){
+       ackList[i] =0;
+       Serial.print("Received ACK From ");
+       Serial.println(NbrAddr64.getLsb());
+       
+    }
+  }
+}
+void sendACKs(Rx64Response recv64){
+  payload[0] = SWITCH_ON_ACK;
+  tx = Tx64Request(recv64.getRemoteAddress64(), payload, sizeof(payload));
+  xbee.send(tx);
+  Serial.println("Sending ACKs");
+}
 void processPayload(Rx64Response recv64){
   Serial.print("Payload Received");
  uint8_t pL = rx64.getData(0);
@@ -307,7 +359,11 @@ void processPayload(Rx64Response recv64){
         Serial.print("offing after ");
         Serial.print(2*LED_ON_COST - meanArrivalTime);
       }
+      sendACKs(recv64);
    break; 
+   case SWITCH_ON_ACK:
+        verfiyAck(recv64);
+   break;
  } 
   
 }
