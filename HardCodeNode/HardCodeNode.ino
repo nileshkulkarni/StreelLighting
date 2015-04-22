@@ -25,10 +25,11 @@
 
 #define SWITCH_ON 1
 
-#define MAX_NBRS 2
+#define MAX_NBRS 5
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
-#define MIN_ON_TIME 2000
+#define MIN_ON_TIME 5000
+int ID =  3;
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -75,23 +76,28 @@ unsigned long lastTime = 0;
 
 
 void autoConfiguration(){
- // Broadcast your packet with AUTO_SYN
- noOfNbrs = 0;
- Serial.println("Broadcasting");
- addr64 = XBeeAddress64(0x00, 0xFFFF);
- payload[0] = CONF_SYN;
- tx = Tx64Request(addr64, payload, sizeof(payload));
- xbee.send(tx);
+  for (int i=0;i<MAX_NBRS;i++)
+    nbrList[i].DH = 1286656;
+  nbrList[0].DL = 1076992318;
+  nbrList[1].DL = 1081531030;
+  nbrList[2].DL = 1081529831;
+  nbrList[3].DL = 1080095032;
+  nbrList[4].DL = 1081531434;
 }
 
 void signalOn(){
    Serial.println("Sending to nbrs that found a car");
-   for(int i=0;i<noOfNbrs;i++)
+   for(int i=ID-1;i<=ID+1;i++)
    {
-     addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
-     payload[0] = SWITCH_ON;
-     tx = Tx64Request(addr64, payload, sizeof(payload));
-     xbee.send(tx);
+     if(i>=0 && i<MAX_NBRS && i!= ID)
+     {
+       addr64 = XBeeAddress64(nbrList[i].DH, nbrList[i].DL);
+       payload[0] = SWITCH_ON;
+       tx = Tx64Request(addr64, payload, sizeof(payload));
+       xbee.send(tx);
+       Serial.print("sending to ");
+       Serial.println(i);
+     }
    }
 }
 
@@ -171,7 +177,6 @@ void sensing()
 }
 
 
-
 uint8_t option = 0;
 uint8_t data = 0;
 SoftwareSerial mySerial(10, 11);
@@ -194,14 +199,14 @@ void setup() {
   pinMode(errorLed, OUTPUT);
   pinMode(dataLed,  OUTPUT);
   
+  
   // start serial
   mySerial.begin(9600);  
   Serial.begin(9600);
   xbee.setSerial(mySerial);
   //flashLed(statusLed, 3, 50);
   autoConfiguration();
-  t.every(15,sensing);
-  t.every(60000,autoConfiguration);
+  t.every(10,sensing);
 }
 
 void addNbr(Rx64Response recv64){
