@@ -24,12 +24,13 @@
 #define CONF_ACK 11
 
 #define SWITCH_ON 1
+#define SWITCH_ON_ACK 2
 
 #define MAX_NBRS 5
 #define READ_TIMEOUT 10
 #define LED_ON_COST 10000
 #define MIN_ON_TIME 5000
-int ID =  3;
+int ID =  0;
 /*
 This example is for Series 1 XBee (802.15.4)
 Receives either a RX16 or RX64 packet and sets a PWM value based on packet data.
@@ -84,7 +85,10 @@ void autoConfiguration(){
   nbrList[3].DL = 1080095032;
   nbrList[4].DL = 1081531434;
 }
-
+void reSend(){
+  
+ 
+}
 void signalOn(){
    Serial.println("Sending to nbrs that found a car");
    for(int i=ID-1;i<=ID+1;i++)
@@ -312,7 +316,8 @@ void processPayload(Rx64Response recv64){
         Serial.print("offing after ");
         Serial.print(2*LED_ON_COST - meanArrivalTime);
       }
-   break; 
+   break;
+  
  } 
   
 }
